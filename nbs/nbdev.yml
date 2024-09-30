@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "scholaris-minimal-reproduction-1"
+  site-url: "https://nicomarr.github.io/scholaris-minimal-reproduction-1"
+  description: "Minimal reproduction of scholaris Assistant class"
+  repo-branch: main
+  repo-url: "https://github.com/nicomarr/scholaris-minimal-reproduction-1"
