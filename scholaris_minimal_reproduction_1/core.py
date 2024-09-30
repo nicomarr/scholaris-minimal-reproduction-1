@@ -6,7 +6,8 @@
 __all__ = ['T', 'generate_json_schema', 'json_schema_decorator', 'get_file_names', 'extract_text_from_pdf',
            'extract_title_and_first_author', 'get_titles_and_first_authors', 'summarize_local_document',
            'describe_python_code', 'convert_id', 'detect_id_type', 'id_converter_tool', 'query_openalex_api',
-           'query_semantic_scholar_api', 'respond_to_generic_queries', 'show_response', 'Assistant', 'add_to_class']
+           'query_semantic_scholar_api', 'respond_to_generic_queries', 'show_response', 'Assistant', 'add_to_class',
+           'clear_conversion_history']
 
 # %% ../nbs/01_core.ipynb 6
 import inspect
@@ -1189,3 +1190,9 @@ def add_to_class(Class: type):
     def wrapper(obj):
         setattr(Class, obj.__name__, obj)
     return wrapper
+
+# %% ../nbs/01_core.ipynb 30
+@add_to_class(Assistant)
+def clear_conversion_history(self):
+    """Clear the conversation history."""
+    self.messages = [{'role': "system", 'content': self.sys_message},]
