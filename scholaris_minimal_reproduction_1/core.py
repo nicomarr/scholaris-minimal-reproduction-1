@@ -16,6 +16,18 @@ import json
 import os
 import random
 import ollama
+import PyPDF2
+import functools
+from typing import TypeVar
+from tqdm import tqdm
+import re
+import requests
+import time
+from typing import Generator
+import sys
+import io
+from pathlib import Path
+
 
 # %% ../nbs/01_core.ipynb 7
 def generate_json_schema(func: Callable) -> Dict[str, Any]:
@@ -101,10 +113,6 @@ def _get_type(arg_type):
         return "object"
 
 # %% ../nbs/01_core.ipynb 8
-import functools
-from typing import TypeVar
-
-# %% ../nbs/01_core.ipynb 9
 T = TypeVar('T', bound=Callable)
 
 def json_schema_decorator(func: T) -> T:
@@ -125,7 +133,7 @@ def json_schema_decorator(func: T) -> T:
     wrapper.json_schema = schema  # Attach the schema dictionary directly
     return wrapper
 
-# %% ../nbs/01_core.ipynb 11
+# %% ../nbs/01_core.ipynb 10
 @json_schema_decorator
 def get_file_names(ext: str = "pdf, txt") -> str:
     """Retrieves a list of file names with specified extensions in a local data directory the assistant has access to on the user's computer.
@@ -170,14 +178,11 @@ def get_file_names(ext: str = "pdf, txt") -> str:
     # Convert list to a comma-separated string. This is because the object is returned to the LLM and the API accepts str only
     return f"List of file names with the specified extensions in the local data directory: {file_names_json}"
 
-# %% ../nbs/01_core.ipynb 12
+# %% ../nbs/01_core.ipynb 11
 assert type(get_file_names.json_schema) == dict
 assert get_file_names.json_schema['function']['name'] == "get_file_names"
 
-# %% ../nbs/01_core.ipynb 13
-import PyPDF2
-
-# %% ../nbs/01_core.ipynb 14
+# %% ../nbs/01_core.ipynb 12
 @json_schema_decorator
 def extract_text_from_pdf(file_name: str, page_range: Optional[str] = None) -> str:
     """A function that extracts text from a PDF file.
@@ -269,11 +274,7 @@ def extract_text_from_pdf(file_name: str, page_range: Optional[str] = None) -> s
 
     return text
 
-# %% ../nbs/01_core.ipynb 15
-from tqdm import tqdm
-
-
-# %% ../nbs/01_core.ipynb 16
+# %% ../nbs/01_core.ipynb 13
 def extract_title_and_first_author(contents: List[Dict[str, str]], model: str='llama3.1', verbose: Optional[bool] = False, show_progress: Optional[bool] = False) -> List[Dict[str, str]]:
     """
     A function that extracts the titles and the first author's names from the text of one or more research articles.
@@ -353,7 +354,7 @@ def extract_title_and_first_author(contents: List[Dict[str, str]], model: str='l
     print("\n") if show_progress else None # Add a newline if showing progress bar
     return contents
 
-# %% ../nbs/01_core.ipynb 17
+# %% ../nbs/01_core.ipynb 14
 @json_schema_decorator
 def get_titles_and_first_authors() -> str:
     """
@@ -403,11 +404,11 @@ def get_titles_and_first_authors() -> str:
         
     return json.dumps(titles_and_authors, indent=2) # Return as a JSON-formatted string
 
-# %% ../nbs/01_core.ipynb 18
+# %% ../nbs/01_core.ipynb 15
 assert type(get_titles_and_first_authors.json_schema) == dict
 assert get_titles_and_first_authors.json_schema['function']['name'] == "get_titles_and_first_authors"
 
-# %% ../nbs/01_core.ipynb 19
+# %% ../nbs/01_core.ipynb 16
 @json_schema_decorator
 def summarize_local_document(file_name: str, ext: str = "pdf") -> str:
     """Summarize the content of a single PDF, markdown, or text document from the local data directory.
@@ -515,13 +516,13 @@ def summarize_local_document(file_name: str, ext: str = "pdf") -> str:
     except Exception as e:
         return f"Error while summarizing the content of the document '{file_name}': {e}" 
 
-# %% ../nbs/01_core.ipynb 20
+# %% ../nbs/01_core.ipynb 17
 assert type(summarize_local_document.json_schema) == dict
 assert summarize_local_document.json_schema['function']['name'] == "summarize_local_document"
 assert 'file_name' in summarize_local_document.json_schema['function']['parameters']['properties'].keys()
 assert 'ext' in summarize_local_document.json_schema['function']['parameters']['properties'].keys()
 
-# %% ../nbs/01_core.ipynb 21
+# %% ../nbs/01_core.ipynb 18
 @json_schema_decorator
 def describe_python_code(file_name: str) -> str:
     """Describe the purpose of the Python code in a local Python file.
@@ -602,16 +603,12 @@ def describe_python_code(file_name: str) -> str:
     except Exception as e:
         return f"Error while describing the Python code in the file '{file_name}': {e}"
 
-# %% ../nbs/01_core.ipynb 22
+# %% ../nbs/01_core.ipynb 19
 assert type(describe_python_code.json_schema) == dict
 assert describe_python_code.json_schema['function']['name'] == "describe_python_code"
 assert 'file_name' in describe_python_code.json_schema['function']['parameters']['properties'].keys()
 
-# %% ../nbs/01_core.ipynb 24
-import re
-import requests
-
-# %% ../nbs/01_core.ipynb 25
+# %% ../nbs/01_core.ipynb 21
 def convert_id(ids: List[str]) -> str:
     """
     For any article(s) in PubMed Central, find all the corresponding PubMed IDs (PMIDs), digital object identifiers (DOIs), and manuscript IDs (MIDs).
@@ -730,7 +727,7 @@ def id_converter_tool(ids: List[str]) -> str:
     
     return json.dumps(result, indent=2)
 
-# %% ../nbs/01_core.ipynb 26
+# %% ../nbs/01_core.ipynb 22
 @json_schema_decorator
 def query_openalex_api(query_param: str) -> str:
     """
@@ -824,11 +821,7 @@ def query_openalex_api(query_param: str) -> str:
     else:
         return json.dumps(raw_search_results, indent=2)
 
-# %% ../nbs/01_core.ipynb 27
-import time
-import re
-
-# %% ../nbs/01_core.ipynb 28
+# %% ../nbs/01_core.ipynb 23
 @json_schema_decorator
 def query_semantic_scholar_api(query_param: str) -> str:
     """
@@ -905,7 +898,7 @@ def query_semantic_scholar_api(query_param: str) -> str:
     else:
         return f"Error: Failed to query Semantic Scholar API. Status code: {response.status_code}"
 
-# %% ../nbs/01_core.ipynb 29
+# %% ../nbs/01_core.ipynb 24
 @json_schema_decorator
 def respond_to_generic_queries() -> str:
     """
@@ -919,10 +912,7 @@ def respond_to_generic_queries() -> str:
 
     return "There is no specific tool available to respond this query from the user. State your capabilities based the system message or provide a response based on the conversation history."
 
-# %% ../nbs/01_core.ipynb 31
-from typing import Generator
-
-# %% ../nbs/01_core.ipynb 32
+# %% ../nbs/01_core.ipynb 26
 def show_response(response: Dict[str, Any] or Generator[Dict[str, Any], None, None]) -> None:
     """
     Print the response from the LLM in a human-readable format.
@@ -954,15 +944,7 @@ def show_response(response: Dict[str, Any] or Generator[Dict[str, Any], None, No
     else:
         raise ValueError(f"\n{RED}nvalid response type. Must be a dictionary or a generator.{RESET}")
 
-# %% ../nbs/01_core.ipynb 33
-import ollama
-from typing import Dict, Any, List
-
-# %% ../nbs/01_core.ipynb 34
-import sys
-import io
-from pathlib import Path
-
+# %% ../nbs/01_core.ipynb 27
 class Assistant:
     def __init__(self,
         sys_message: str or None = None, # The system message for the assistant; if not provided, a default message is used
@@ -1202,14 +1184,14 @@ class Assistant:
                 self.messages.append({'role': 'assistant', 'content': full_content})
                 return full_content  # Return the full content, not as a generator
 
-# %% ../nbs/01_core.ipynb 35
+# %% ../nbs/01_core.ipynb 28
 def add_to_class(Class: type):
     """Register functions as methods in a class that has already been defined."""
     def wrapper(obj):
         setattr(Class, obj.__name__, obj)
     return wrapper
 
-# %% ../nbs/01_core.ipynb 36
+# %% ../nbs/01_core.ipynb 29
 @add_to_class(Assistant)
 def show_conversion_history(self, show_function_calls: bool = False):
     """Display the conversation history.
@@ -1245,13 +1227,13 @@ def show_conversion_history(self, show_function_calls: bool = False):
                 for fn_return in message['content']:
                     print(f"{BOLD}{GREY}Function return:{RESET} {GREY}{fn_return}{RESET}\n")
 
-# %% ../nbs/01_core.ipynb 37
+# %% ../nbs/01_core.ipynb 30
 @add_to_class(Assistant)
 def clear_conversion_history(self):
     """Clear the conversation history."""
     self.messages = [{'role': "system", 'content': self.sys_message},]
 
-# %% ../nbs/01_core.ipynb 38
+# %% ../nbs/01_core.ipynb 31
 @add_to_class(Assistant)
 def pprint_tools(self):
     for tool in self.get_tools_schema():   
