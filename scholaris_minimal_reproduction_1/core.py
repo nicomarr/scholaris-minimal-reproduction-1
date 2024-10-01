@@ -7,9 +7,9 @@ __all__ = ['T', 'generate_json_schema', 'json_schema_decorator', 'get_file_names
            'extract_title_and_first_author', 'get_titles_and_first_authors', 'summarize_local_document',
            'describe_python_code', 'convert_id', 'detect_id_type', 'id_converter_tool', 'query_openalex_api',
            'query_semantic_scholar_api', 'respond_to_generic_queries', 'show_response', 'Assistant', 'add_to_class',
-           'clear_conversion_history']
+           'show_conversion_history', 'clear_conversion_history', 'pprint_tools']
 
-# %% ../nbs/01_core.ipynb 6
+# %% ../nbs/01_core.ipynb 7
 import inspect
 from typing import Callable, Dict, List, Tuple, Optional, Any, Union 
 import json
@@ -29,7 +29,7 @@ import io
 from pathlib import Path
 
 
-# %% ../nbs/01_core.ipynb 7
+# %% ../nbs/01_core.ipynb 8
 def generate_json_schema(func: Callable) -> Dict[str, Any]:
     """
     Generate a JSON schema for the given function based on its annotations and docstring.
@@ -112,7 +112,7 @@ def _get_type(arg_type):
     else:
         return "object"
 
-# %% ../nbs/01_core.ipynb 8
+# %% ../nbs/01_core.ipynb 9
 T = TypeVar('T', bound=Callable)
 
 def json_schema_decorator(func: T) -> T:
@@ -133,7 +133,7 @@ def json_schema_decorator(func: T) -> T:
     wrapper.json_schema = schema  # Attach the schema dictionary directly
     return wrapper
 
-# %% ../nbs/01_core.ipynb 10
+# %% ../nbs/01_core.ipynb 11
 @json_schema_decorator
 def get_file_names(ext: str = "pdf, txt") -> str:
     """Retrieves a list of file names with specified extensions in a local data directory the assistant has access to on the user's computer.
@@ -178,11 +178,11 @@ def get_file_names(ext: str = "pdf, txt") -> str:
     # Convert list to a comma-separated string. This is because the object is returned to the LLM and the API accepts str only
     return f"List of file names with the specified extensions in the local data directory: {file_names_json}"
 
-# %% ../nbs/01_core.ipynb 11
+# %% ../nbs/01_core.ipynb 12
 assert type(get_file_names.json_schema) == dict
 assert get_file_names.json_schema['function']['name'] == "get_file_names"
 
-# %% ../nbs/01_core.ipynb 12
+# %% ../nbs/01_core.ipynb 13
 @json_schema_decorator
 def extract_text_from_pdf(file_name: str, page_range: Optional[str] = None) -> str:
     """A function that extracts text from a PDF file.
@@ -274,7 +274,7 @@ def extract_text_from_pdf(file_name: str, page_range: Optional[str] = None) -> s
 
     return text
 
-# %% ../nbs/01_core.ipynb 13
+# %% ../nbs/01_core.ipynb 14
 def extract_title_and_first_author(contents: List[Dict[str, str]], model: str='llama3.1', verbose: Optional[bool] = False, show_progress: Optional[bool] = False) -> List[Dict[str, str]]:
     """
     A function that extracts the titles and the first author's names from the text of one or more research articles.
@@ -354,7 +354,7 @@ def extract_title_and_first_author(contents: List[Dict[str, str]], model: str='l
     print("\n") if show_progress else None # Add a newline if showing progress bar
     return contents
 
-# %% ../nbs/01_core.ipynb 14
+# %% ../nbs/01_core.ipynb 15
 @json_schema_decorator
 def get_titles_and_first_authors() -> str:
     """
@@ -404,11 +404,11 @@ def get_titles_and_first_authors() -> str:
         
     return json.dumps(titles_and_authors, indent=2) # Return as a JSON-formatted string
 
-# %% ../nbs/01_core.ipynb 15
+# %% ../nbs/01_core.ipynb 16
 assert type(get_titles_and_first_authors.json_schema) == dict
 assert get_titles_and_first_authors.json_schema['function']['name'] == "get_titles_and_first_authors"
 
-# %% ../nbs/01_core.ipynb 16
+# %% ../nbs/01_core.ipynb 17
 @json_schema_decorator
 def summarize_local_document(file_name: str, ext: str = "pdf") -> str:
     """Summarize the content of a single PDF, markdown, or text document from the local data directory.
@@ -516,13 +516,13 @@ def summarize_local_document(file_name: str, ext: str = "pdf") -> str:
     except Exception as e:
         return f"Error while summarizing the content of the document '{file_name}': {e}" 
 
-# %% ../nbs/01_core.ipynb 17
+# %% ../nbs/01_core.ipynb 18
 assert type(summarize_local_document.json_schema) == dict
 assert summarize_local_document.json_schema['function']['name'] == "summarize_local_document"
 assert 'file_name' in summarize_local_document.json_schema['function']['parameters']['properties'].keys()
 assert 'ext' in summarize_local_document.json_schema['function']['parameters']['properties'].keys()
 
-# %% ../nbs/01_core.ipynb 18
+# %% ../nbs/01_core.ipynb 19
 @json_schema_decorator
 def describe_python_code(file_name: str) -> str:
     """Describe the purpose of the Python code in a local Python file.
@@ -603,12 +603,12 @@ def describe_python_code(file_name: str) -> str:
     except Exception as e:
         return f"Error while describing the Python code in the file '{file_name}': {e}"
 
-# %% ../nbs/01_core.ipynb 19
+# %% ../nbs/01_core.ipynb 20
 assert type(describe_python_code.json_schema) == dict
 assert describe_python_code.json_schema['function']['name'] == "describe_python_code"
 assert 'file_name' in describe_python_code.json_schema['function']['parameters']['properties'].keys()
 
-# %% ../nbs/01_core.ipynb 21
+# %% ../nbs/01_core.ipynb 22
 def convert_id(ids: List[str]) -> str:
     """
     For any article(s) in PubMed Central, find all the corresponding PubMed IDs (PMIDs), digital object identifiers (DOIs), and manuscript IDs (MIDs).
@@ -727,7 +727,7 @@ def id_converter_tool(ids: List[str]) -> str:
     
     return json.dumps(result, indent=2)
 
-# %% ../nbs/01_core.ipynb 22
+# %% ../nbs/01_core.ipynb 23
 @json_schema_decorator
 def query_openalex_api(query_param: str) -> str:
     """
@@ -821,7 +821,7 @@ def query_openalex_api(query_param: str) -> str:
     else:
         return json.dumps(raw_search_results, indent=2)
 
-# %% ../nbs/01_core.ipynb 23
+# %% ../nbs/01_core.ipynb 24
 @json_schema_decorator
 def query_semantic_scholar_api(query_param: str) -> str:
     """
@@ -898,7 +898,7 @@ def query_semantic_scholar_api(query_param: str) -> str:
     else:
         return f"Error: Failed to query Semantic Scholar API. Status code: {response.status_code}"
 
-# %% ../nbs/01_core.ipynb 24
+# %% ../nbs/01_core.ipynb 25
 @json_schema_decorator
 def respond_to_generic_queries() -> str:
     """
@@ -912,7 +912,7 @@ def respond_to_generic_queries() -> str:
 
     return "There is no specific tool available to respond this query from the user. State your capabilities based the system message or provide a response based on the conversation history."
 
-# %% ../nbs/01_core.ipynb 26
+# %% ../nbs/01_core.ipynb 27
 def show_response(response: Dict[str, Any] or Generator[Dict[str, Any], None, None]) -> None:
     """
     Print the response from the LLM in a human-readable format.
@@ -944,9 +944,10 @@ def show_response(response: Dict[str, Any] or Generator[Dict[str, Any], None, No
     else:
         raise ValueError(f"\n{RED}nvalid response type. Must be a dictionary or a generator.{RESET}")
 
-# %% ../nbs/01_core.ipynb 27
+# %% ../nbs/01_core.ipynb 28
 class Assistant:
     def __init__(self,
+        status: dict = {}, # The status of the assistant
         sys_message: str or None = None, # The system message for the assistant; if not provided, a default message is used
         model: str = "llama3.1:latest", # The model to use for the assistant
         tools: Dict[str, Any] = { # The tools available to the assistant
@@ -965,8 +966,16 @@ class Assistant:
         dir_path: str = "../data", # The directory path to which the assistant has access on the local computer
         messages: List[Dict[str, str]] = []): # The conversation history
         
-        self.sys_message = sys_message
+        # ANSI escape codes, used for output formatting
+        GREY = "\033[90m"
+        BLUE = "\033[94m"
+        ORANGE = "\033[33m"
+        RED = "\033[91m"
+        RESET = "\033[0m"
+
         self.model = model
+
+        self.sys_message = sys_message
         self.tools = tools
         self.tools.update(add_tools) # Add additional tools to the assistant, if provided
         if self.tools:
@@ -974,6 +983,15 @@ class Assistant:
         self.authentication = authentication or {}
         self.dir_path = Path(dir_path).resolve()
         self.messages = messages
+        self.status = self.get_status()
+        if self.status["status_code"] not in [2, 3]:
+            print(f"{self.status["detail"]}")
+            self.server_available = False
+            return None
+        else:
+            if self.status["status_code"] == 3:
+                print(f"{self.status["detail"]}")
+            self.server_available = True
 
         # Set global variables
         global DIR_PATH
@@ -983,12 +1001,6 @@ class Assistant:
         # TODO: Consider allowing the user to set different models for different tasks and tools
         # e.g. a model such as llama 3.1 for function calls, command-r-plus for summarization, aya for translation, etc.
         
-        # ANSI escape codes, used for output formatting
-        GREY = "\033[90m"
-        BLUE = "\033[94m"
-        RED = "\033[91m"
-        RESET = "\033[0m"
-
         # Load the API keys from the environment variables or the authentication dictionary
         self.SEMANTIC_SCHOLAR_API_KEY = self.authentication.get("SEMANTIC_SCHOLAR_API_KEY")
         self.EMAIL = self.authentication.get("EMAIL")
@@ -1027,16 +1039,7 @@ class Assistant:
         Act as a knowledgeable research assistant, offering clear and helpful information based on available tools and data.
         """
 
-        # Check if the model is available
-        downloaded_models = []
-        for model in ollama.list()["models"]:
-            downloaded_models.append((model["name"].replace(":latest", "")))
-        assert self.model.replace(":latest", "") in downloaded_models, f"Model {self.model} not found. Please pull the latest version from the server."
-
-        # Check if the selected model supports tool calling
-        # for more information, visit https://ollama.com/blog/tool-support
-        assert self.model.split(":")[0] in ["llama3.1", "command-r-plus", "mistral-nemo", "firefunction-v2"], f"Model {self.model} does not support tool calling. Please select a different model."
-
+        # Check if tools are provided
         if len(self.tools) == 0:
             print(f"\033[91mNo tools provided! Please add tools to the assistant.\033[0m")
 
@@ -1045,6 +1048,38 @@ class Assistant:
 
     def __repr__(self):
         return self.__str__()
+
+    def get_status(self):
+        """Get the status of the assistant initialization."""
+        status = {}
+        try:
+            response = requests.get("http://localhost:11434")
+            if response.status_code == 200:
+                downloaded_models = [model.get("model").split(":")[0] for model in ollama.list()["models"]]
+                tool_supporting_models = ["llama3.2", "llama3.1", "qwen2.5", "mistral-nemo", "nemotron-mini", "command-r", "command-r-plus", "firefunction-v2"]
+                if not any(model in downloaded_models for model in tool_supporting_models):
+                    status["status_code"] = 3
+                    status["detail"] = "Warning: Unknown model. Did you download a model that supports tool calling? Visit https://ollama.com/search?c=tools for details."
+                elif len(downloaded_models) == 0:
+                    status["status_code"] = 4
+                    status["detail"] = "Error: No local models found. Visit https://ollama.com/models for available models and instructions on how to download them."
+                elif not hasattr(self, "model") or self.model.split(":")[0] not in downloaded_models:
+                    status["status_code"] = 5
+                    status["detail"] = "Error: Selected model not downloaded. Visit https://ollama.com/models for available models and instructions on how to download them."
+                else:
+                    status["status_code"] = 2
+                    status["detail"] = "Assistant initialized successfully."
+            else:
+                status["status_code"] = 6
+                status["detail"] = "Error: Could not connect to local host at port 11434. Is the Ollama app running? Aborting initialization of the assistant."
+        except Exception as e:
+            if "Connection refused" in str(e):
+                status["status_code"] = 7
+                status["detail"] = "Error: Could not connect to a running Ollama instance. Is the Ollama app installed and the server running? Aborting initialization of the assistant."
+            else:
+                status["status_code"] = 8
+                status["detail"] = f"Error: {e}"
+        return status
 
     def list_tools(self):
         "List the available tools in the assistant."
@@ -1078,6 +1113,11 @@ class Assistant:
         Returns:
             str: The AI assistant's response.
         """
+        # Abort the function if the server is not available
+        if not self.server_available:
+            print(assistant.get_status()["detail"])
+            return None
+
         # At the start of the conversation, if no messages are provided, add the system message and user prompt
         if not self.messages:
             self.messages = [
@@ -1184,7 +1224,7 @@ class Assistant:
                 self.messages.append({'role': 'assistant', 'content': full_content})
                 return full_content  # Return the full content, not as a generator
 
-# %% ../nbs/01_core.ipynb 28
+# %% ../nbs/01_core.ipynb 29
 def add_to_class(Class: type):
     """Register functions as methods in a class that has already been defined."""
     def wrapper(obj):
@@ -1193,6 +1233,51 @@ def add_to_class(Class: type):
 
 # %% ../nbs/01_core.ipynb 30
 @add_to_class(Assistant)
+def show_conversion_history(self, show_function_calls: bool = False):
+    """Display the conversation history.
+    
+    Args:
+        show_function_calls (bool): Whether to show function calls and returns in the conversation history. Default is False.
+
+    Returns:
+        None
+    """
+
+    # ANSI escape code for blue and red text
+    BLUE = "\033[94m"
+    BOLD = "\033[1m"
+    GREY = "\033[90m"
+    RESET = "\033[0m"
+
+    for message in self.messages:
+        if message['role'] != 'system':
+            if message['role'] == 'user':
+                print(f"{BOLD}User:{RESET} {message['content']}\n")
+            elif message['role'] == 'assistant':
+                if 'content' in message and message['content']:
+                    print(f"{BOLD}{BLUE}Assistant response:{RESET} {BLUE}{message['content']}{RESET}\n")
+                if 'tool_calls' in message and message['tool_calls'] and show_function_calls:
+                    print(f"{BOLD}{BLUE}Assistant function calls:{RESET} ", end='')
+                    for tool in message['tool_calls']:
+                        print(f"{BLUE}{tool['function']['name']}() with arguments {tool['function']['arguments']}{RESET}\n")
+            elif message['role'] == 'tool' and show_function_calls:
+                # convert str to list
+                if isinstance(message['content'], str):
+                    message['content'] = [message['content']]
+                for fn_return in message['content']:
+                    print(f"{BOLD}{GREY}Function return:{RESET} {GREY}{fn_return}{RESET}\n")
+
+# %% ../nbs/01_core.ipynb 31
+@add_to_class(Assistant)
 def clear_conversion_history(self):
     """Clear the conversation history."""
     self.messages = [{'role': "system", 'content': self.sys_message},]
+
+# %% ../nbs/01_core.ipynb 32
+@add_to_class(Assistant)
+def pprint_tools(self):
+    for tool in self.get_tools_schema():   
+        print(f"""* Tool name: {tool.get("function", {}).get("name", "No name available.")}
+    Description: {tool.get("function", {}).get("description", "No description available.")}
+        """)
+    return None
