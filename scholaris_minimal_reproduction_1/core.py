@@ -985,7 +985,7 @@ class Assistant:
         self.messages = messages
         self.status = self.get_status()
         if self.status["status_code"] not in [2, 3]:
-            print(f"{self.status["detail"]}")
+            print(f"{self.status['detail']}")
             self.server_available = False
             return None
         else:
@@ -1224,14 +1224,14 @@ class Assistant:
                 self.messages.append({'role': 'assistant', 'content': full_content})
                 return full_content  # Return the full content, not as a generator
 
-# %% ../nbs/01_core.ipynb 29
+# %% ../nbs/01_core.ipynb 30
 def add_to_class(Class: type):
     """Register functions as methods in a class that has already been defined."""
     def wrapper(obj):
         setattr(Class, obj.__name__, obj)
     return wrapper
 
-# %% ../nbs/01_core.ipynb 30
+# %% ../nbs/01_core.ipynb 31
 @add_to_class(Assistant)
 def show_conversion_history(self, show_function_calls: bool = False):
     """Display the conversation history.
@@ -1267,13 +1267,13 @@ def show_conversion_history(self, show_function_calls: bool = False):
                 for fn_return in message['content']:
                     print(f"{BOLD}{GREY}Function return:{RESET} {GREY}{fn_return}{RESET}\n")
 
-# %% ../nbs/01_core.ipynb 31
+# %% ../nbs/01_core.ipynb 32
 @add_to_class(Assistant)
 def clear_conversion_history(self):
     """Clear the conversation history."""
     self.messages = [{'role': "system", 'content': self.sys_message},]
 
-# %% ../nbs/01_core.ipynb 32
+# %% ../nbs/01_core.ipynb 33
 @add_to_class(Assistant)
 def pprint_tools(self):
     for tool in self.get_tools_schema():   
