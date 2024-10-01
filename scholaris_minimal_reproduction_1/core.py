@@ -990,7 +990,7 @@ class Assistant:
             return None
         else:
             if self.status["status_code"] == 3:
-                print(f"{self.status["detail"]}")
+                print(f"{self.status['detail']}")
             self.server_available = True
 
         # Set global variables
